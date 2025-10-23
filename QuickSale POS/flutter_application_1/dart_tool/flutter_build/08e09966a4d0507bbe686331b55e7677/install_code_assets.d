@@ -1,0 +1,1 @@
+ C:\\Users\\root\\Documents\\QuickSale\ POS\\flutter_application_1\\.dart_tool\\flutter_build\\08e09966a4d0507bbe686331b55e7677\\native_assets.json: 

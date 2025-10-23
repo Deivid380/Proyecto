@@ -1,0 +1,1 @@
+ C:\\Users\\root\\Documents\\QuickSale\ POS\\flutter_application_1\\.dart_tool\\flutter_build\\d5c40c3b683e151fd09dda3a66c5b675\\dart_build_result.json: 
