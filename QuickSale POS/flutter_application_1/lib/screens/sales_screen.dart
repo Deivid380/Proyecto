@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:quicksale_pos/models/cliente_model.dart';
+import 'package:quicksale_pos/models/user.dart';
+import 'package:quicksale_pos/screens/select_client_screen.dart';
 import '../helpers/database_helper.dart';
-import 'package:intl/intl.dart';
+import '../helpers/currency_formatter.dart';
 import '../models/product.dart';
 import './scanner_screen.dart';
 import '../widgets/empty_state.dart';
 
 class SalesScreen extends StatefulWidget {
-  const SalesScreen({super.key});
+  final User user;
+  const SalesScreen({super.key, required this.user});
 
   @override
   State<SalesScreen> createState() => _SalesScreenState();
@@ -42,19 +46,65 @@ class _SalesScreenState extends State<SalesScreen> {
   void _finalizeSale() async {
     if (_cart.isEmpty) return;
 
-    await dbHelper.createSale(_cart);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Finalizar Venta'),
+        content: const Text('¿Cómo desea finalizar la venta?'),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _processPaidSale();
+            },
+            child: const Text('Venta Pagada'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _processCreditSale();
+            },
+            child: const Text('Añadir a Deuda (Fiar)'),
+          ),
+        ],
+      ),
+    );
+  }
 
+  Future<void> _processPaidSale() async {
+    await dbHelper.createSale(_cart, widget.user.id!);
     setState(() {
       _cart.clear();
     });
-
     _showSnackBar('¡Venta finalizada con éxito!', isError: false);
   }
 
-  void _removeItem(int index) {
-    setState(() {
-      _cart.removeAt(index);
-    });
+  Future<void> _processCreditSale() async {
+    final selectedCliente = await Navigator.of(context).push<Cliente>(
+      MaterialPageRoute(builder: (context) => const SelectClientScreen()),
+    );
+
+    if (selectedCliente != null) {
+      final totalSale = _total;
+      final updatedCliente = Cliente(
+        id: selectedCliente.id,
+        nombre: selectedCliente.nombre,
+        telefono: selectedCliente.telefono,
+        deudaActual: selectedCliente.deudaActual + totalSale,
+      );
+
+      await dbHelper.updateCliente(updatedCliente);
+      await dbHelper.createSale(_cart, widget.user.id!, clienteId: selectedCliente.id);
+
+      setState(() {
+        _cart.clear();
+      });
+
+      _showSnackBar(
+        'Deuda añadida a ${selectedCliente.nombre} con éxito.',
+        isError: false,
+      );
+    }
   }
 
   void _showSnackBar(String message, {bool isError = true}) {
@@ -79,12 +129,6 @@ class _SalesScreenState extends State<SalesScreen> {
     }
     final groupedItems = groupedCart.values.toList();
 
-    final currencyFormatter = NumberFormat.currency(
-      locale: 'es_CO',
-      symbol: '\$',
-      decimalDigits: 0,
-    );
-
     return Scaffold(
       appBar: AppBar(title: const Text('Ventas')),
       body: Column(
@@ -106,7 +150,7 @@ class _SalesScreenState extends State<SalesScreen> {
                         title: Text(product.name),
                         subtitle: Text('Cantidad: $quantity'),
                         trailing: Text(
-                          currencyFormatter.format(product.price * quantity),
+                          CurrencyFormatter.format(product.price * quantity),
                         ),
                         onTap: () {
                           // Simple removal of first occurrence
@@ -139,7 +183,7 @@ class _SalesScreenState extends State<SalesScreen> {
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       Text(
-                        currencyFormatter.format(_total),
+                        CurrencyFormatter.format(_total),
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.bold,

@@ -3,6 +3,7 @@ class SaleItem {
   int? id;
   final int saleId;
   final int productId;
+  final String productName;
   final int quantity;
   final double price;
 
@@ -10,6 +11,7 @@ class SaleItem {
     this.id,
     required this.saleId,
     required this.productId,
+    required this.productName,
     required this.quantity,
     required this.price,
   });
@@ -17,8 +19,9 @@ class SaleItem {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'sale_id': saleId,
-      'product_id': productId,
+      'saleId': saleId,
+      'productId': productId,
+      'productName': productName,
       'quantity': quantity,
       'price': price,
     };

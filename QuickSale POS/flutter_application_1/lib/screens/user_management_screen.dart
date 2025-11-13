@@ -4,6 +4,7 @@ import 'package:quicksale_pos/models/user.dart';
 import 'package:quicksale_pos/widgets/empty_state.dart';
 
 class UserManagementScreen extends StatefulWidget {
+  // Ya no necesita recibir el currentUser
   const UserManagementScreen({super.key});
 
   @override
@@ -238,9 +239,48 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     subtitle: Text(
                       'Rol: ${_getRoleInSpanish(user.role)} - Estado: ${user.status}',
                     ),
-                    trailing: user.status == 'blocked'
-                        ? const Icon(Icons.lock, color: Colors.orange)
-                        : null,
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (user.status == 'blocked')
+                          const Icon(Icons.lock, color: Colors.orange),
+                        if (!isCurrentUserAdmin)
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () async {
+                              final confirm = await showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('Confirmar Eliminación'),
+                                  content: Text(
+                                      '¿Está seguro de que desea eliminar a ${user.username}?'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(false),
+                                      child: const Text('Cancelar'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(true),
+                                      child: const Text('Eliminar'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (confirm == true) {
+                                await dbHelper.deleteUser(user.id!);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Usuario ${user.username} eliminado'),
+                                  ),
+                                );
+                                _refreshUsers();
+                              }
+                            },
+                          ),
+                      ],
+                    ),
                     onTap: isCurrentUserAdmin
                         ? null
                         : () => _showUserDialog(user: user),
@@ -258,4 +298,14 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       ),
     );
   }
+}
+
+Future<List<User>> fetchUsersForReports(DatabaseHelper dbHelper) async {
+  final users = await dbHelper.getAllUsers();
+  // Añadimos una opción para ver los reportes de todos los usuarios
+  users.insert(
+    0,
+    User(id: 0, username: 'Todos los usuarios', password: '', role: ''),
+  );
+  return users;
 }

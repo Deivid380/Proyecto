@@ -136,7 +136,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       builder: (context) => AlertDialog(
                         title: const Text('Recuperar Contraseña'),
                         content: const Text(
-                          'Esta función no está disponible en el modo offline. Si eres el administrador, puedes gestionar los usuarios en una futura actualización. Si eres un empleado, contacta al administrador del negocio.',
+                          'Para recuperar tu contraseña, por favor, contacta al administrador del sistema.',
                         ),
                         actions: [
                           TextButton(

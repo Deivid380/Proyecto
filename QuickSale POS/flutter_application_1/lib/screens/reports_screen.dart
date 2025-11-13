@@ -1,153 +1,313 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:quicksale_pos/models/user.dart';
+import 'package:quicksale_pos/screens/user_management_screen.dart';
 import '../helpers/database_helper.dart';
-import '../models/sale.dart';
-import './sale_detail_screen.dart';
+import '../helpers/currency_formatter.dart';
 import '../widgets/empty_state.dart';
-import './top_products_screen.dart';
 
 class ReportsScreen extends StatefulWidget {
-  const ReportsScreen({super.key});
+  final User user;
+  const ReportsScreen({super.key, required this.user});
 
   @override
   State<ReportsScreen> createState() => _ReportsScreenState();
 }
 
 class _ReportsScreenState extends State<ReportsScreen> {
-  late Future<List<Sale>> _salesFuture;
+  Future<Map<String, dynamic>>? _summaryFuture;
+  Future<List<Map<String, dynamic>>>? _dailySalesFuture;
   final dbHelper = DatabaseHelper();
-  DateTime? _startDate;
-  DateTime? _endDate;
+
+  // Para el filtro de admin
+  List<User> _usersForFilter = [];
+  int? _selectedUserId;
 
   @override
   void initState() {
     super.initState();
-    _refreshSales();
-  }
-
-  void _refreshSales() {
-    setState(() {
-      if (_startDate != null && _endDate != null) {
-        // Adjust end date to include the entire day
-        final adjustedEndDate = _endDate!.add(const Duration(days: 1));
-        _salesFuture = dbHelper.getSalesByDateRange(_startDate!, adjustedEndDate);
-      } else {
-        _salesFuture = dbHelper.getAllSales();
-      }
-    });
-  }
-
-  Future<void> _selectDateRange(BuildContext context) async {
-    final initialDateRange = DateTimeRange(
-      start: _startDate ?? DateTime.now().subtract(const Duration(days: 7)),
-      end: _endDate ?? DateTime.now(),
-    );
-
-    final newDateRange = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 1)),
-      initialDateRange: initialDateRange,
-    );
-
-    if (newDateRange != null) {
-      setState(() {
-        _startDate = newDateRange.start;
-        _endDate = newDateRange.end;
-      });
-      _refreshSales();
+    if (widget.user.role == 'admin') {
+      _loadUsersForFilter();
+      _selectedUserId = 0; // "Todos los usuarios" por defecto
+    } else {
+      _selectedUserId = widget.user.id;
     }
+    _loadReportData();
   }
 
-  void _clearFilter() {
+  void _loadReportData() async {
+    if (_selectedUserId == null) {
+      return; // Esperar a que se seleccione un usuario
+    }
+
+    final today = DateTime.now();
+    final startOfToday = DateTime(today.year, today.month, today.day);
     setState(() {
-      _startDate = null;
-      _endDate = null;
+      _summaryFuture = dbHelper.getSalesSummary(
+        startOfToday,
+        today,
+        userId: _selectedUserId,
+      );
+      _dailySalesFuture = dbHelper.getDailySalesForLastWeek(
+        userId: _selectedUserId,
+      );
     });
-    _refreshSales();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Reportes de Ventas'),
+        title: const Text('Reportes'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.trending_up),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => const TopProductsScreen()),
-              );
-            },
-            tooltip: 'Productos más vendidos',
-          ),
-          IconButton(
-            icon: const Icon(Icons.calendar_month),
-            onPressed: () => _selectDateRange(context),
-            tooltip: 'Filtrar por fecha',
-          ),
-          IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _refreshSales,
+            onPressed: _loadReportData,
             tooltip: 'Refrescar',
           ),
         ],
       ),
       body: Column(
         children: [
-          if (_startDate != null && _endDate != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Chip(
-                label: Text(
-                  '${DateFormat('dd/MM/yy').format(_startDate!)} - ${DateFormat('dd/MM/yy').format(_endDate!)}',
-                ),
-                onDeleted: _clearFilter,
-                deleteIcon: const Icon(Icons.close, size: 18),
-              ),
-            ),
+          if (widget.user.role == 'admin') _buildUserFilter(),
           Expanded(
-            child: FutureBuilder<List<Sale>>(
-              future: _salesFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                }
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const EmptyState(
-                    icon: Icons.bar_chart_outlined,
-                    message: 'No hay ventas para el filtro seleccionado.',
-                  );
-                }
+            child: (_summaryFuture == null || _dailySalesFuture == null)
+                ? const Center(child: CircularProgressIndicator())
+                : FutureBuilder(
+                    future: Future.wait([_summaryFuture!, _dailySalesFuture!]),
+                    builder: (context, AsyncSnapshot<List<dynamic>> snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (snapshot.hasError) {
+                        return Center(child: Text('Error: ${snapshot.error}'));
+                      }
+                      if (!snapshot.hasData) {
+                        return const EmptyState(
+                          icon: Icons.bar_chart_outlined,
+                          message: 'No hay datos para mostrar.',
+                        );
+                      }
 
-                final sales = snapshot.data!;
+                      final summary = snapshot.data![0] as Map<String, dynamic>;
+                      final dailySales =
+                          snapshot.data![1] as List<Map<String, dynamic>>;
 
-                return ListView.builder(
-                  itemCount: sales.length,
-                  itemBuilder: (context, index) {
-                    final sale = sales[index];
-                    return ListTile(
-                      title: Text('Venta #${sale.id}'),
-                      subtitle: Text(DateFormat('dd/MM/yyyy HH:mm').format(sale.date)),
-                      trailing: Text('\${sale.totalAmount.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => SaleDetailScreen(sale: sale),
-                          ),
-                        ).then((_) => _refreshSales());
-                      },
-                    );
-                  },
-                );
-              },
-            ),
+                      final totalSales = summary['totalSales'] ?? 0.0;
+                      final topProduct = summary['topProduct'];
+
+                      return SingleChildScrollView(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _buildSummaryCard(
+                              title: 'Ventas Totales de Hoy',
+                              content: CurrencyFormatter.format(totalSales),
+                              icon: Icons.monetization_on,
+                              color: Colors.green,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildTopProductCard(topProduct),
+                            const SizedBox(height: 16),
+                            _buildWeeklyChart(dailySales),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildUserFilter() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: DropdownButtonFormField<int>(
+        value: _selectedUserId,
+        decoration: const InputDecoration(
+          labelText: 'Ver reportes de',
+          border: OutlineInputBorder(),
+        ),
+        items: _usersForFilter.map((User user) {
+          return DropdownMenuItem<int>(
+            value: user.id,
+            child: Text(user.username),
+          );
+        }).toList(),
+        onChanged: (int? newValue) {
+          setState(() {
+            _selectedUserId = newValue;
+            _loadReportData();
+          });
+        },
+      ),
+    );
+  }
+
+  Future<void> _loadUsersForFilter() async {
+    final users = await fetchUsersForReports(dbHelper);
+    setState(() {
+      _usersForFilter = users;
+    });
+  }
+
+  Widget _buildSummaryCard({
+    required String title,
+    required String content,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            Icon(icon, size: 40, color: color),
+            const SizedBox(width: 16),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  content,
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTopProductCard(Map<String, dynamic>? topProduct) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Producto Más Vendido de Hoy',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            if (topProduct != null)
+              Row(
+                children: [
+                  const Icon(Icons.star, color: Colors.amber, size: 40),
+                  const SizedBox(width: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        topProduct['name'],
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        '${topProduct['total_quantity']} unidades',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                    ],
+                  ),
+                ],
+              )
+            else
+              const Text('No hay datos de productos vendidos hoy.'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWeeklyChart(List<Map<String, dynamic>> dailySales) {
+    if (dailySales.isEmpty) {
+      return const SizedBox(
+        height: 200,
+        child: Center(
+          child: Text("No hay datos de ventas para la última semana."),
+        ),
+      );
+    }
+
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Ventas de los Últimos 7 Días',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 200,
+              child: BarChart(
+                BarChartData(
+                  alignment: BarChartAlignment.spaceBetween,
+                  maxY:
+                      dailySales
+                          .map((d) => d['total'] as double)
+                          .reduce((a, b) => a > b ? a : b) *
+                      1.2,
+                  barTouchData: BarTouchData(enabled: true),
+                  titlesData: FlTitlesData(
+                    leftTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          final date =
+                              dailySales[value.toInt()]['date'] as DateTime;
+                          return SideTitleWidget(
+                            axisSide: meta.axisSide,
+                            child: Text(DateFormat.E('es_ES').format(date)),
+                          );
+                        },
+                        reservedSize: 28,
+                      ),
+                    ),
+                  ),
+                  borderData: FlBorderData(show: false),
+                  barGroups: dailySales.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final data = entry.value;
+                    return BarChartGroupData(
+                      x: index,
+                      barRods: [
+                        BarChartRodData(
+                          toY: data['total'] as double,
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 16,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ],
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

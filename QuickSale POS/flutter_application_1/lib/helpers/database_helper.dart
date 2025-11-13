@@ -2,7 +2,8 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/product.dart';
 import '../models/sale.dart';
-import '../models/user.dart'; // Importamos el modelo de usuario
+import 'package:quicksale_pos/models/user.dart';
+import 'package:quicksale_pos/models/cliente_model.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -24,7 +25,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'quicksale_pos.db');
     return await openDatabase(
       path,
-      version: 2, // ¡Importante! Aumentamos la versión
+      version: 5, // Versión incrementada a 5
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -37,14 +38,17 @@ class DatabaseHelper {
         name TEXT,
         price REAL,
         stock INTEGER,
-        barcode TEXT UNIQUE
+        barcode TEXT UNIQUE,
+        imageUrl TEXT
       )
     ''');
     await db.execute('''
       CREATE TABLE sales(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         date TEXT,
-        totalAmount REAL
+        totalAmount REAL,
+        userId INTEGER,
+        clienteId INTEGER
       )
     ''');
     await db.execute('''
@@ -58,7 +62,6 @@ class DatabaseHelper {
         FOREIGN KEY (saleId) REFERENCES sales (id) ON DELETE CASCADE
       )
     ''');
-    // Nueva tabla para usuarios
     await db.execute('''
       CREATE TABLE users(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -68,22 +71,131 @@ class DatabaseHelper {
         status TEXT DEFAULT 'active'
       )
     ''');
+    await db.execute('''
+      CREATE TABLE clientes(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nombre TEXT,
+        telefono TEXT,
+        deudaActual REAL
+      )
+    ''');
 
-    // Insertar usuario administrador por defecto
     await db.insert('users', {
       'username': 'admin',
-      'password': 'admin', // En una app real, esto debería ser un hash
+      'password': 'admin',
       'role': 'admin',
     });
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // Si la base de datos vieja es versión 1, le añadimos la columna 'status'
     if (oldVersion < 2) {
       await db.execute(
         "ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'active'",
       );
     }
+    if (oldVersion < 3) {
+      await db.execute(
+        "ALTER TABLE products ADD COLUMN imageUrl TEXT",
+      );
+    }
+    if (oldVersion < 4) {
+      await db.execute('''
+        CREATE TABLE clientes(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          nombre TEXT,
+          telefono TEXT,
+          deudaActual REAL
+        )
+      ''');
+    }
+    if (oldVersion < 5) {
+      await db.execute('ALTER TABLE sales ADD COLUMN userId INTEGER');
+    }
+    if (oldVersion < 6) {
+      await db.execute('ALTER TABLE sales ADD COLUMN clienteId INTEGER');
+    }
+  }
+
+  // --- Métodos para Clientes ---
+  Future<int> insertCliente(Cliente cliente) async {
+    Database db = await database;
+    return await db.insert('clientes', cliente.toMap());
+  }
+
+  Future<List<Cliente>> getAllClientes() async {
+    Database db = await database;
+    List<Map<String, dynamic>> maps = await db.query('clientes');
+    return List.generate(maps.length, (i) {
+      return Cliente.fromMap(maps[i]);
+    });
+  }
+
+  Future<int> updateCliente(Cliente cliente) async {
+    Database db = await database;
+    return await db.update(
+      'clientes',
+      cliente.toMap(),
+      where: 'id = ?',
+      whereArgs: [cliente.id],
+    );
+  }
+
+  Future<int> deleteCliente(int id) async {
+    Database db = await database;
+    return await db.delete('clientes', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // --- Métodos para Usuarios ---
+  Future<int> insertUser(User user) async {
+    Database db = await database;
+    return await db.insert('users', user.toMap());
+  }
+
+  Future<List<User>> getAllUsers() async {
+    Database db = await database;
+    final List<Map<String, dynamic>> maps = await db.query('users');
+    return List.generate(maps.length, (i) {
+      return User.fromMap(maps[i]);
+    });
+  }
+
+  Future<User?> findUserByUsernameAndPassword(
+      String username, String password) async {
+    Database db = await database;
+    List<Map<String, dynamic>> maps = await db.query(
+      'users',
+      where: 'username = ? AND password = ?',
+      whereArgs: [username, password],
+    );
+    if (maps.isNotEmpty) {
+      return User.fromMap(maps.first);
+    }
+    return null;
+  }
+
+  Future<bool> doesUserExist(String username) async {
+    Database db = await database;
+    List<Map<String, dynamic>> maps = await db.query(
+      'users',
+      where: 'username = ?',
+      whereArgs: [username],
+    );
+    return maps.isNotEmpty;
+  }
+
+  Future<int> updateUser(User user) async {
+    Database db = await database;
+    return await db.update(
+      'users',
+      user.toMap(),
+      where: 'id = ?',
+      whereArgs: [user.id],
+    );
+  }
+
+  Future<int> deleteUser(int id) async {
+    Database db = await database;
+    return await db.delete('users', where: 'id = ?', whereArgs: [id]);
   }
 
   // --- Métodos para Productos ---
@@ -139,7 +251,7 @@ class DatabaseHelper {
   }
 
   // --- Métodos para Ventas ---
-  Future<int> createSale(List<Product> cart) async {
+  Future<int> createSale(List<Product> cart, int userId, {int? clienteId}) async {
     Database db = await database;
     int saleId = 0;
     await db.transaction((txn) async {
@@ -147,6 +259,8 @@ class DatabaseHelper {
       saleId = await txn.insert('sales', {
         'date': DateTime.now().toIso8601String(),
         'totalAmount': totalAmount,
+        'userId': userId,
+        'clienteId': clienteId,
       });
 
       for (var product in cart) {
@@ -158,12 +272,21 @@ class DatabaseHelper {
           'price': product.price,
         });
         // Actualizar stock del producto
-        Product? currentProduct = await getProductById(product.id!);
-        if (currentProduct != null && currentProduct.stock > 0) {
-          await updateProductStock(
-            currentProduct.id!,
-            currentProduct.stock - 1,
-          );
+        List<Map<String, dynamic>> maps = await txn.query(
+          'products',
+          where: 'id = ?',
+          whereArgs: [product.id],
+        );
+        if (maps.isNotEmpty) {
+          Product currentProduct = Product.fromMap(maps.first);
+          if (currentProduct.stock > 0) {
+            await txn.update(
+              'products',
+              {'stock': currentProduct.stock - 1},
+              where: 'id = ?',
+              whereArgs: [currentProduct.id],
+            );
+          }
         }
       }
     });
@@ -197,12 +320,21 @@ class DatabaseHelper {
   Future<List<Sale>> getSalesByDateRange(
     DateTime startDate,
     DateTime endDate,
+    {int? userId}
   ) async {
     Database db = await database;
+    String whereClause = 'date BETWEEN ? AND ?';
+    List<dynamic> whereArgs = [startDate.toIso8601String(), endDate.toIso8601String()];
+
+    if (userId != null && userId != 0) { // 0 es el valor para "Todos los usuarios"
+      whereClause += ' AND userId = ?';
+      whereArgs.add(userId);
+    }
+
     List<Map<String, dynamic>> maps = await db.query(
       'sales',
-      where: 'date BETWEEN ? AND ?',
-      whereArgs: [startDate.toIso8601String(), endDate.toIso8601String()],
+      where: whereClause,
+      whereArgs: whereArgs,
       orderBy: 'date DESC',
     );
     return List.generate(maps.length, (i) {
@@ -231,75 +363,88 @@ class DatabaseHelper {
     return result;
   }
 
-  // --- Métodos para Usuarios ---
-  Future<int> insertUser(User user) async {
+  Future<Map<String, dynamic>> getSalesSummary(
+    DateTime startDate,
+    DateTime endDate, {
+    int? userId,
+  }) async {
     Database db = await database;
-    return await db.insert(
-      'users',
-      user.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-  }
+    final adjustedEndDate = endDate.add(const Duration(days: 1));
 
-  Future<int> updateUser(User user) async {
-    final db = await database;
-    return await db.update(
-      'users',
-      user.toMap(),
-      where: 'id = ?',
-      whereArgs: [user.id],
-    );
-  }
+    String whereClause = 'date >= ? AND date < ?';
+    List<dynamic> whereArgs = [
+      startDate.toIso8601String(),
+      adjustedEndDate.toIso8601String()
+    ];
 
-  Future<int> deleteUser(int id) async {
-    final db = await database;
-    return await db.delete('users', where: 'id = ?', whereArgs: [id]);
-  }
-
-  Future<User?> findUserByUsernameAndPassword(
-    String username,
-    String password,
-  ) async {
-    Database db = await database;
-    List<Map<String, dynamic>> maps = await db.query(
-      'users',
-      where: 'username = ? AND password = ?',
-      whereArgs: [username, password],
-    );
-    if (maps.isNotEmpty) {
-      return User.fromMap(maps.first);
+    if (userId != null && userId != 0) {
+      whereClause += ' AND userId = ?';
+      whereArgs.add(userId);
     }
-    return null;
+
+    final totalSalesResult = await db.rawQuery('''
+      SELECT SUM(totalAmount) as total
+      FROM sales
+      WHERE $whereClause
+    ''', whereArgs);
+
+    final topProductResult = await db.rawQuery('''
+      SELECT productName as name, SUM(quantity) as total_quantity
+      FROM sale_items
+      WHERE saleId IN (SELECT id FROM sales WHERE $whereClause)
+      GROUP BY productName
+      ORDER BY total_quantity DESC
+      LIMIT 1
+    ''', whereArgs);
+
+    return {
+      'totalSales': totalSalesResult.first['total'] ?? 0.0,
+      'topProduct': topProductResult.isNotEmpty ? topProductResult.first : null,
+    };
   }
 
-  Future<User?> getUserByUsername(String username) async {
+  Future<List<Map<String, dynamic>>> getDailySalesForLastWeek({int? userId}) async {
     Database db = await database;
-    List<Map<String, dynamic>> maps = await db.query(
-      'users',
-      where: 'username = ?',
-      whereArgs: [username],
-    );
-    if (maps.isNotEmpty) {
-      return User.fromMap(maps.first);
+    final today = DateTime.now();
+    final List<Map<String, dynamic>> salesByDay = [];
+
+    for (int i = 6; i >= 0; i--) {
+      final day = today.subtract(Duration(days: i));
+      final startOfDay = DateTime(day.year, day.month, day.day);
+      final endOfDay = startOfDay.add(const Duration(days: 1));
+
+      String whereClause = 'date >= ? AND date < ?';
+      List<dynamic> whereArgs = [
+        startOfDay.toIso8601String(),
+        endOfDay.toIso8601String()
+      ];
+
+      if (userId != null && userId != 0) {
+        whereClause += ' AND userId = ?';
+        whereArgs.add(userId);
+      }
+
+      final result = await db.rawQuery('''
+        SELECT SUM(totalAmount) as total
+        FROM sales
+        WHERE $whereClause
+      ''', whereArgs);
+
+      salesByDay.add({
+        'date': startOfDay,
+        'total': result.first['total'] ?? 0.0,
+      });
     }
-    return null;
+    return salesByDay;
   }
 
-  Future<bool> doesUserExist(String username) async {
-    Database db = await database;
-    List<Map<String, dynamic>> maps = await db.query(
-      'users',
-      where: 'username = ?',
-      whereArgs: [username],
+  Future<List<User>> fetchUsersForReports() async {
+    final users = await getAllUsers();
+    // Añadimos una opción para ver los reportes de todos los usuarios
+    users.insert(
+      0,
+      User(id: 0, username: 'Todos los usuarios', password: '', role: ''),
     );
-    return maps.isNotEmpty;
-  }
-
-  Future<List<User>> getAllUsers() async {
-    Database db = await database;
-    List<Map<String, dynamic>> maps = await db.query('users');
-    return List.generate(maps.length, (i) {
-      return User.fromMap(maps[i]);
-    });
+    return users;
   }
 }

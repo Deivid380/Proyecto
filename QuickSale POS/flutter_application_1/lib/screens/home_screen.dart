@@ -21,9 +21,9 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _widgetOptions = <Widget>[
-      const SalesScreen(),
+      SalesScreen(user: widget.user), // Pasamos el usuario a SalesScreen
       const ProductsScreen(),
-      const ReportsScreen(),
+      ReportsScreen(user: widget.user), // Pasamos el usuario a ReportsScreen
       ProfileScreen(user: widget.user), // Pasamos el usuario a ProfileScreen
     ];
   }

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:printing/printing.dart';
 import '../helpers/database_helper.dart';
 import '../helpers/pdf_helper.dart';
+import 'package:quicksale_pos/helpers/currency_formatter.dart';
 import '../models/sale.dart';
 
 class SaleDetailScreen extends StatelessWidget {
@@ -33,7 +34,7 @@ class SaleDetailScreen extends StatelessWidget {
               children: [
                 Text('Fecha: ${DateFormat('dd/MM/yyyy HH:mm').format(sale.date)}', style: const TextStyle(fontSize: 16)),
                 const SizedBox(height: 8),
-                Text('Total: \${sale.totalAmount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                Text('Total: ${CurrencyFormatter.format(sale.totalAmount)}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
@@ -61,7 +62,7 @@ class SaleDetailScreen extends StatelessWidget {
                     return ListTile(
                       title: Text(item['name']),
                       subtitle: Text('Cantidad: ${item['quantity']}'),
-                      trailing: Text("\${(item['price'] * item['quantity']).toStringAsFixed(2)}"),
+                      trailing: Text(CurrencyFormatter.format(item['price'] * item['quantity'])),
                     );
                   },
                 );

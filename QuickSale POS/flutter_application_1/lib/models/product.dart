@@ -5,6 +5,7 @@ class Product {
   double price;
   int stock;
   String? barcode;
+  String? imageUrl; // Nuevo campo para la URL de la imagen
 
   Product({
     this.id,
@@ -12,6 +13,7 @@ class Product {
     required this.price,
     required this.stock,
     this.barcode,
+    this.imageUrl,
   });
 
   // Convert a Product into a Map. The keys must correspond to the names of the
@@ -23,6 +25,7 @@ class Product {
       'price': price,
       'stock': stock,
       'barcode': barcode,
+      'imageUrl': imageUrl,
     };
   }
 
@@ -34,11 +37,12 @@ class Product {
       price: map['price'],
       stock: map['stock'],
       barcode: map['barcode'],
+      imageUrl: map['imageUrl'],
     );
   }
 
   @override
   String toString() {
-    return 'Product{id: $id, name: $name, price: $price, stock: $stock, barcode: $barcode}';
+    return 'Product{id: $id, name: $name, price: $price, stock: $stock, barcode: $barcode, imageUrl: $imageUrl}';
   }
 }

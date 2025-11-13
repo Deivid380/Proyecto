@@ -30,7 +30,13 @@ class User {
   }
 
   Map<String, dynamic> toMap() {
-    return {'id': id, 'username': username, 'password': password, 'role': role};
+    return {
+      'id': id,
+      'username': username,
+      'password': password,
+      'role': role,
+      'status': status,
+    };
   }
 
   factory User.fromMap(Map<String, dynamic> map) {
