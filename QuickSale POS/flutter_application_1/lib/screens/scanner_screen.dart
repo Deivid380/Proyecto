@@ -17,7 +17,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text('Escanear Código'),
-        backgroundColor: Colors.black.withOpacity(0.3),
+        backgroundColor: Colors.black.withAlpha((255 * 0.3).round()),
         elevation: 0,
       ),
       body: Stack(
@@ -44,7 +44,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
               width: MediaQuery.of(context).size.width * 0.7,
               height: 250,
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.red.withOpacity(0.7), width: 3),
+                border: Border.all(color: Colors.red.withAlpha((255 * 0.7).round()), width: 3),
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
@@ -57,7 +57,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.5),
+                color: Colors.black.withAlpha((255 * 0.5).round()),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Row(
