@@ -430,7 +430,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       dotData: const FlDotData(show: true),
                       belowBarData: BarAreaData(
                         show: true,
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                        color: Theme.of(context).colorScheme.primary.withAlpha((255 * 0.3).round()),
                       ),
                     ),
                   ],
