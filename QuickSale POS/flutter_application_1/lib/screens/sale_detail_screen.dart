@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:quicksale_pos/helpers/currency_formatter.dart';
 import 'package:quicksale_pos/helpers/database_helper.dart';
 import '../models/sale.dart';
@@ -51,7 +52,7 @@ class _SaleDetailScreenState extends State<SaleDetailScreen> {
               ),
               pw.Divider(),
               ...items.map((item) {
-                print('PDF Item: $item'); // Debug print - KEEP THIS
+                debugPrint('PDF Item: $item'); // Debug print - KEEP THIS
                 final String productName = item['productName']?.toString() ?? 'Producto Desconocido';
                 final int quantity = (item['quantity'] as int?) ?? 0;
                 final double price = (item['price'] as double?) ?? 0.0;
