@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
@@ -52,6 +53,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
               }
               _refreshProducts();
               if (!mounted) return;
+              // ignore: use_build_context_synchronously
               Navigator.of(context).pop();
             },
           ),
@@ -143,7 +145,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
         actions: [
           TextButton(
             onPressed: () {
-              print('Delete cancelled for product: ${product.name}');
+              debugPrint('Delete cancelled for product: ${product.name}');
               Navigator.of(context).pop();
             },
             child: const Text('Cancelar'),
@@ -151,10 +153,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
           ElevatedButton(
             onPressed: () async {
               Navigator.of(context).pop(); // Close the dialog
-              print('Attempting to delete product: ${product.name} (ID: ${product.id})');
+              debugPrint('Attempting to delete product: ${product.name} (ID: ${product.id})');
               await dbHelper.deleteProduct(product.id!);
-              print('Product deleted: ${product.name}');
+              debugPrint('Product deleted: ${product.name}');
               if (!mounted) return;
+              // ignore: use_build_context_synchronously
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('${product.name} eliminado')),
               );
