@@ -25,7 +25,8 @@ class QuickSaleApp extends StatelessWidget {
     return MaterialApp(
       title: 'QuickSale POS',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
+      theme: AppTheme
+          .lightTheme, // Asegúrate de que AppTheme.lightTheme incorpore los cambios sugeridos
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system, // O .dark para forzar el modo oscuro
       home: const SplashScreen(), // La app ahora empieza aquí

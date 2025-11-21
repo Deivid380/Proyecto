@@ -251,11 +251,11 @@ class DatabaseHelper {
   }
 
   // --- Métodos para Ventas ---
-  Future<int> createSale(List<Product> cart, int userId, {int? clienteId}) async {
+  Future<int> createSale(List<dynamic> cart, int userId, {int? clienteId}) async {
     Database db = await database;
     int saleId = 0;
     await db.transaction((txn) async {
-      double totalAmount = cart.fold(0, (sum, item) => sum + item.price);
+      double totalAmount = cart.fold(0, (sum, item) => sum + (item.product.price * item.quantity));
       saleId = await txn.insert('sales', {
         'date': DateTime.now().toIso8601String(),
         'totalAmount': totalAmount,
@@ -263,30 +263,23 @@ class DatabaseHelper {
         'clienteId': clienteId,
       });
 
-      for (var product in cart) {
+      for (var item in cart) {
         await txn.insert('sale_items', {
           'saleId': saleId,
-          'productId': product.id,
-          'productName': product.name,
-          'quantity': 1, // Asumimos 1 por cada item en el carrito
-          'price': product.price,
+          'productId': item.product.id,
+          'productName': item.product.name,
+          'quantity': item.quantity, // Usar la cantidad del CartItem
+          'price': item.product.price,
         });
         // Actualizar stock del producto
-        List<Map<String, dynamic>> maps = await txn.query(
-          'products',
-          where: 'id = ?',
-          whereArgs: [product.id],
-        );
-        if (maps.isNotEmpty) {
-          Product currentProduct = Product.fromMap(maps.first);
-          if (currentProduct.stock > 0) {
-            await txn.update(
-              'products',
-              {'stock': currentProduct.stock - 1},
-              where: 'id = ?',
-              whereArgs: [currentProduct.id],
-            );
-          }
+        Product currentProduct = item.product;
+        if (currentProduct.stock >= item.quantity) {
+          await txn.update(
+            'products',
+            {'stock': currentProduct.stock - item.quantity},
+            where: 'id = ?',
+            whereArgs: [currentProduct.id],
+          );
         }
       }
     });

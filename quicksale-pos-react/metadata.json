@@ -1,0 +1,7 @@
+{
+  "name": "QuickSale POS",
+  "description": "Sistema de Punto de Venta (POS) moderno para pequeños comercios. Gestiona ventas, inventario y reportes con asistencia de IA.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

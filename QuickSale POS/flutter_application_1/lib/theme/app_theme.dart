@@ -4,9 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 class AppTheme {
   AppTheme._();
 
-  // Paleta de colores moderna
-  static const Color _primaryColor = Color(0xFF6A1B9A); // Morado oscuro
-  static const Color _secondaryColor = Color(0xFF8E24AA); // Morado más claro
+  // Paleta de colores POS Profesional
+  static final Color _primaryColor = Colors.blueGrey[700]!;
+  static const Color _secondaryColor = Colors.blueGrey;
   static const Color _lightBackgroundColor = Color(0xFFF5F5F5);
   static const Color _darkBackgroundColor = Color(0xFF121212);
   static const Color _lightSurfaceColor = Colors.white;
@@ -17,18 +17,20 @@ class AppTheme {
     useMaterial3: true,
     brightness: Brightness.light,
     primaryColor: _primaryColor,
+    primarySwatch: Colors.blueGrey,
     scaffoldBackgroundColor: _lightBackgroundColor,
+    fontFamily: GoogleFonts.roboto().fontFamily,
     appBarTheme: AppBarTheme(
-      elevation: 0,
-      backgroundColor: _lightBackgroundColor,
+      elevation: 1,
+      backgroundColor: _lightSurfaceColor,
       foregroundColor: Colors.black87,
-      titleTextStyle: GoogleFonts.poppins(
-        fontSize: 20,
+      titleTextStyle: GoogleFonts.roboto(
+        fontSize: 22,
         fontWeight: FontWeight.w600,
         color: Colors.black87,
       ),
     ),
-    colorScheme: const ColorScheme.light(
+    colorScheme: ColorScheme.light(
       primary: _primaryColor,
       secondary: _secondaryColor,
       surface: _lightSurfaceColor,
@@ -38,13 +40,18 @@ class AppTheme {
       onSurface: Colors.black87,
       onBackground: Colors.black87,
     ),
-    textTheme: GoogleFonts.poppinsTextTheme(),
+    textTheme: GoogleFonts.robotoTextTheme().copyWith(
+      bodyLarge: const TextStyle(fontSize: 18.0),
+      bodyMedium: const TextStyle(fontSize: 16.0),
+      labelLarge: const TextStyle(fontSize: 18.0), // For buttons
+    ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
+        minimumSize: const Size(64, 64), // Botones más grandes
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
@@ -54,6 +61,7 @@ class AppTheme {
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
       ),
+      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
     ),
   );
 
@@ -63,28 +71,38 @@ class AppTheme {
     brightness: Brightness.dark,
     primaryColor: _primaryColor,
     scaffoldBackgroundColor: _darkBackgroundColor,
+    fontFamily: GoogleFonts.roboto().fontFamily,
     appBarTheme: AppBarTheme(
-      elevation: 0,
-      backgroundColor: _darkBackgroundColor,
-      titleTextStyle: GoogleFonts.poppins(
-        fontSize: 20,
+      elevation: 1,
+      backgroundColor: _darkSurfaceColor,
+      titleTextStyle: GoogleFonts.roboto(
+        fontSize: 22,
         fontWeight: FontWeight.w600,
         color: Colors.white,
       ),
     ),
-    colorScheme: const ColorScheme.dark(
+    colorScheme: ColorScheme.dark(
       primary: _primaryColor,
       secondary: _secondaryColor,
       surface: _darkSurfaceColor,
       background: _darkBackgroundColor,
+      onPrimary: Colors.white,
+      onSecondary: Colors.white,
+      onSurface: Colors.white,
+      onBackground: Colors.white,
     ),
-    textTheme: GoogleFonts.poppinsTextTheme(ThemeData.dark().textTheme),
+    textTheme: GoogleFonts.robotoTextTheme(ThemeData.dark().textTheme).copyWith(
+      bodyLarge: const TextStyle(fontSize: 18.0),
+      bodyMedium: const TextStyle(fontSize: 16.0),
+      labelLarge: const TextStyle(fontSize: 18.0), // For buttons
+    ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
+        minimumSize: const Size(64, 64), // Botones más grandes
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
@@ -94,6 +112,7 @@ class AppTheme {
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
       ),
+      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
     ),
   );
 }
