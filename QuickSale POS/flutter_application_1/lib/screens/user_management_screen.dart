@@ -162,6 +162,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   await dbHelper.insertUser(newUser);
                 }
                 _refreshUsers();
+                if (!mounted) return;
                 Navigator.of(context).pop();
               },
               child: const Text('Guardar'),
@@ -214,6 +215,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 ),
                 onDismissed: (direction) async {
                   await dbHelper.deleteUser(user.id!);
+                  if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Usuario ${user.username} eliminado'),
@@ -270,6 +272,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                               );
                               if (confirm == true) {
                                 await dbHelper.deleteUser(user.id!);
+                                if (!mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text('Usuario ${user.username} eliminado'),
