@@ -25,8 +25,8 @@ class AppTheme {
     displayMedium: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold, color: textColor),
     headlineSmall: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w600, color: textColor),
     titleLarge: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: textColor),
-    bodyLarge: GoogleFonts.poppins(fontSize: 16, color: textColor.withOpacity(0.9)),
-    bodyMedium: GoogleFonts.poppins(fontSize: 14, color: textColor.withOpacity(0.8)),
+    bodyLarge: GoogleFonts.poppins(fontSize: 16, color: textColor.withAlpha((255 * 0.9).round())),
+    bodyMedium: GoogleFonts.poppins(fontSize: 14, color: textColor.withAlpha((255 * 0.8).round())),
     labelLarge: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
   );
 
@@ -35,8 +35,8 @@ class AppTheme {
     displayMedium: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold, color: textColorDark),
     headlineSmall: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w600, color: textColorDark),
     titleLarge: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: textColorDark),
-    bodyLarge: GoogleFonts.poppins(fontSize: 16, color: textColorDark.withOpacity(0.9)),
-    bodyMedium: GoogleFonts.poppins(fontSize: 14, color: textColorDark.withOpacity(0.8)),
+    bodyLarge: GoogleFonts.poppins(fontSize: 16, color: textColorDark.withAlpha((255 * 0.9).round())),
+    bodyMedium: GoogleFonts.poppins(fontSize: 14, color: textColorDark.withAlpha((255 * 0.8).round())),
     labelLarge: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: textColor),
   );
 
@@ -74,14 +74,14 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
         elevation: 2,
-        shadowColor: primaryColor.withOpacity(0.2),
+        shadowColor: primaryColor.withAlpha((255 * 0.2).round()),
         textStyle: _lightTextTheme.labelLarge,
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: surfaceColor,
-      hintStyle: _lightTextTheme.bodyMedium?.copyWith(color: textColor.withOpacity(0.5)),
+      hintStyle: _lightTextTheme.bodyMedium?.copyWith(color: textColor.withAlpha((255 * 0.5).round())),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none, // Sin bordes para un look más limpio
@@ -97,9 +97,9 @@ class AppTheme {
       contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
     ),
     bottomNavigationBarTheme: BottomNavigationBarThemeData(
-      backgroundColor: surfaceColor.withOpacity(0.85), // Transparencia para integrar con el fondo
+      backgroundColor: surfaceColor.withAlpha((255 * 0.85).round()), // Transparencia para integrar con el fondo
       selectedItemColor: primaryColor,
-      unselectedItemColor: textColor.withOpacity(0.5),
+      unselectedItemColor: textColor.withAlpha((255 * 0.5).round()),
       elevation: 0, // Sin sombra
       type: BottomNavigationBarType.fixed,
       selectedLabelStyle: _lightTextTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -141,14 +141,14 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
         elevation: 2,
-        shadowColor: primaryColorDark.withOpacity(0.2),
+        shadowColor: primaryColorDark.withAlpha((255 * 0.2).round()),
         textStyle: _darkTextTheme.labelLarge,
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: surfaceColorDark,
-      hintStyle: _darkTextTheme.bodyMedium?.copyWith(color: textColorDark.withOpacity(0.5)),
+      hintStyle: _darkTextTheme.bodyMedium?.copyWith(color: textColorDark.withAlpha((255 * 0.5).round())),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
@@ -164,9 +164,9 @@ class AppTheme {
       contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
     ),
     bottomNavigationBarTheme: BottomNavigationBarThemeData(
-      backgroundColor: surfaceColorDark.withOpacity(0.85),
+      backgroundColor: surfaceColorDark.withAlpha((255 * 0.85).round()),
       selectedItemColor: primaryColorDark,
-      unselectedItemColor: textColorDark.withOpacity(0.6),
+      unselectedItemColor: textColorDark.withAlpha((255 * 0.6).round()),
       elevation: 0,
       type: BottomNavigationBarType.fixed,
       selectedLabelStyle: _darkTextTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -180,7 +180,7 @@ class AppTheme {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            primaryColor.withOpacity(0.05),
+            primaryColor.withAlpha((255 * 0.05).round()),
             backgroundColor,
             backgroundColor,
           ],
@@ -199,7 +199,7 @@ class AppTheme {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            primaryColorDark.withOpacity(0.1),
+            primaryColorDark.withAlpha((255 * 0.1).round()),
             backgroundColorDark,
           ],
           begin: Alignment.topCenter,
