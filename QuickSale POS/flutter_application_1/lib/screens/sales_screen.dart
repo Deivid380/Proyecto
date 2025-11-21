@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:quicksale_pos/models/user.dart';
 import 'package:quicksale_pos/screens/scanner_screen.dart';
 import '../helpers/database_helper.dart';
@@ -125,12 +126,12 @@ class _SalesScreenState extends State<SalesScreen> {
 
   void _incrementQuantity(int productId) {
     setState(() {
-      print('Incrementing quantity for product ID: $productId');
+      debugPrint('Incrementing quantity for product ID: $productId');
       // Find the CartItem in _cart using productId
       final existingItemIndex = _cart.indexWhere((item) => item.product.id == productId);
 
       if (existingItemIndex == -1) {
-        print('Error: Attempted to increment quantity for a product not in cart: $productId');
+        debugPrint('Error: Attempted to increment quantity for a product not in cart: $productId');
         return;
       }
 
@@ -154,20 +155,20 @@ class _SalesScreenState extends State<SalesScreen> {
             backgroundColor: Colors.orange,
           ));
       }
-      print('Cart after incrementing: ${_cart.map((item) => '${item.product.name} x ${item.quantity}').join(', ')}');
-      print('Current Cart Length: ${_cart.length}');
-      print('Current Total: $_total');
+      debugPrint('Cart after incrementing: ${_cart.map((item) => '${item.product.name} x ${item.quantity}').join(', ')}');
+      debugPrint('Current Cart Length: ${_cart.length}');
+      debugPrint('Current Total: $_total');
     });
   }
 
   void _decrementQuantity(int productId) {
     setState(() {
-      print('Decrementing quantity for product ID: $productId');
+      debugPrint('Decrementing quantity for product ID: $productId');
       // Find the CartItem in _cart using productId
       final existingItemIndex = _cart.indexWhere((item) => item.product.id == productId);
 
       if (existingItemIndex == -1) {
-        print('Error: Attempted to decrement quantity for a product not in cart: $productId');
+        debugPrint('Error: Attempted to decrement quantity for a product not in cart: $productId');
         return;
       }
 
@@ -183,19 +184,19 @@ class _SalesScreenState extends State<SalesScreen> {
       } else {
         _removeFromCart(existingItem);
       }
-      print('Cart after decrementing: ${_cart.map((item) => '${item.product.name} x ${item.quantity}').join(', ')}');
-      print('Current Cart Length: ${_cart.length}');
-      print('Current Total: $_total');
+      debugPrint('Cart after decrementing: ${_cart.map((item) => '${item.product.name} x ${item.quantity}').join(', ')}');
+      debugPrint('Current Cart Length: ${_cart.length}');
+      debugPrint('Current Total: $_total');
     });
   }
 
   void _removeFromCart(CartItem item) {
     setState(() {
-      print('Removing item from cart: ${item.product.name}');
+      debugPrint('Removing item from cart: ${item.product.name}');
       _cart = List<CartItem>.from(_cart)..remove(item); // Create new list and remove
-      print('Cart after removing: ${_cart.map((item) => '${item.product.name} x ${item.quantity}').join(', ')}');
-      print('Current Cart Length: ${_cart.length}');
-      print('Current Total: $_total');
+      debugPrint('Cart after removing: ${_cart.map((item) => '${item.product.name} x ${item.quantity}').join(', ')}');
+      debugPrint('Current Cart Length: ${_cart.length}');
+      debugPrint('Current Total: $_total');
     });
   }
 
@@ -589,11 +590,11 @@ class _CartView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print('BUILDING _CartView. Cart length: ${cart.length}');
+    debugPrint('BUILDING _CartView. Cart length: ${cart.length}');
     return Container(
       margin: const EdgeInsets.all(8.0),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor.withOpacity(0.5),
+        color: Theme.of(context).cardColor.withAlpha(255 ~/ 2),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -612,7 +613,7 @@ class _CartView extends StatelessWidget {
                     itemCount: cart.length,
                     itemBuilder: (context, index) {
                       final item = cart[index];
-                      print('  Building ListTile for ${item.product.name} x ${item.quantity}');
+                      debugPrint('  Building ListTile for ${item.product.name} x ${item.quantity}');
                       final availableStockInProduct = item.product.stock - item.quantity; // Stock available for this product outside the cart
                       return ListTile(
                         key: ObjectKey(item),
