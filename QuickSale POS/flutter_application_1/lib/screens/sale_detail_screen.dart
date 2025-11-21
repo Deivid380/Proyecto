@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
+
 import 'package:quicksale_pos/helpers/currency_formatter.dart';
 import 'package:quicksale_pos/helpers/database_helper.dart';
 import '../models/sale.dart';
