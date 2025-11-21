@@ -89,7 +89,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       obscureText: true,
                     ),
                     DropdownButtonFormField<String>(
-                      value: selectedRole,
+                      key: ValueKey(selectedRole),
+                      initialValue: selectedRole,
                       decoration: const InputDecoration(labelText: 'Rol'),
                       items:
                           [
@@ -163,6 +164,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 }
                 _refreshUsers();
                 if (!mounted) return;
+                // ignore: use_build_context_synchronously
                 Navigator.of(context).pop();
               },
               child: const Text('Guardar'),
@@ -217,6 +219,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   await dbHelper.deleteUser(user.id!);
                   if (!mounted) return;
                   final messenger = ScaffoldMessenger.of(context);
+                  // ignore: use_build_context_synchronously
                   messenger.showSnackBar(
                     SnackBar(
                       content: Text('Usuario ${user.username} eliminado'),
@@ -275,6 +278,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                 await dbHelper.deleteUser(user.id!);
                                 if (!mounted) return;
                                 final messenger = ScaffoldMessenger.of(context);
+                                // ignore: use_build_context_synchronously
                                 messenger.showSnackBar(
                                   SnackBar(
                                     content: Text('Usuario ${user.username} eliminado'),
