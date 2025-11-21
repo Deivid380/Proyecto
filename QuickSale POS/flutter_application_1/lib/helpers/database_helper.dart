@@ -25,7 +25,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'quicksale_pos.db');
     return await openDatabase(
       path,
-      version: 5, // Versión incrementada a 5
+      version: 7, // Versión incrementada a 5
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -113,6 +113,9 @@ class DatabaseHelper {
     }
     if (oldVersion < 6) {
       await db.execute('ALTER TABLE sales ADD COLUMN clienteId INTEGER');
+    }
+    if (oldVersion < 7) {
+      await db.execute("ALTER TABLE sales ADD COLUMN paymentMethod TEXT");
     }
   }
 
@@ -299,12 +302,22 @@ class DatabaseHelper {
     return null;
   }
 
-  Future<List<Sale>> getAllSales() async {
+  Future<List<Sale>> getAllSales({int? userId}) async {
     Database db = await database;
-    List<Map<String, dynamic>> maps = await db.query(
-      'sales',
-      orderBy: 'date DESC',
-    );
+    List<Map<String, dynamic>> maps;
+    if (userId != null && userId != 0) { // Asumiendo que 0 es para 'Todos'
+      maps = await db.query(
+        'sales',
+        where: 'userId = ?',
+        whereArgs: [userId],
+        orderBy: 'date DESC',
+      );
+    } else {
+      maps = await db.query(
+        'sales',
+        orderBy: 'date DESC',
+      );
+    }
     return List.generate(maps.length, (i) {
       return Sale.fromMap(maps[i]);
     });
@@ -342,6 +355,11 @@ class DatabaseHelper {
       where: 'saleId = ?',
       whereArgs: [saleId],
     );
+  }
+
+  Future<int> deleteSale(int id) async {
+    Database db = await database;
+    return await db.delete('sales', where: 'id = ?', whereArgs: [id]);
   }
 
   Future<List<Map<String, dynamic>>> getTopSellingProducts() async {

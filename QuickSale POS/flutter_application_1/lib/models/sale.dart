@@ -5,6 +5,7 @@ class Sale {
   final DateTime date;
   final int userId;
   final int? clienteId; // Puede ser nulo si la venta no está asociada a un cliente
+  final String? paymentMethod; // Nuevo campo para el método de pago
 
   Sale({
     this.id,
@@ -12,6 +13,7 @@ class Sale {
     required this.date,
     required this.userId,
     this.clienteId,
+    this.paymentMethod,
   });
 
   Map<String, dynamic> toMap() {
@@ -21,6 +23,7 @@ class Sale {
       'date': date.toIso8601String(),
       'userId': userId,
       'clienteId': clienteId,
+      'paymentMethod': paymentMethod,
     };
   }
 
@@ -31,6 +34,7 @@ class Sale {
       date: DateTime.parse(map['date']),
       userId: map['userId'],
       clienteId: map['clienteId'],
+      paymentMethod: map['paymentMethod'],
     );
   }
 }

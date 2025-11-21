@@ -55,7 +55,7 @@ class PdfHelper {
                 return pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Expanded(flex: 3, child: pw.Text(item['name'])),
+                    pw.Expanded(flex: 3, child: pw.Text(item['productName'])),
                     pw.Expanded(
                         flex: 1, child: pw.Text(item['quantity'].toString())),
                     pw.Expanded(

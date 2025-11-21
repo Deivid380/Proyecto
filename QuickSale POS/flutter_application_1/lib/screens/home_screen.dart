@@ -4,6 +4,7 @@ import 'package:quicksale_pos/screens/reports_screen.dart';
 import 'package:quicksale_pos/screens/profile_screen.dart';
 import 'package:quicksale_pos/models/user.dart'; // Importamos el modelo de usuario
 import 'package:quicksale_pos/screens/sales_screen.dart';
+import 'package:quicksale_pos/theme/app_theme.dart';
 
 class HomeScreen extends StatefulWidget {
   final User user; // Ahora HomeScreen requiere un objeto User
@@ -37,29 +38,32 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _widgetOptions.elementAt(
-        _selectedIndex,
-      ), // Ya no necesitamos Center aquí
+      body: AppTheme.gradientBackground(
+        child: _widgetOptions.elementAt(_selectedIndex),
+      ),
       bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType
-            .fixed, // Asegura que todos los items sean visibles
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        selectedItemColor: Theme.of(context).colorScheme.secondary,
-        unselectedItemColor: Colors.grey,
+        // No es necesario especificar colores aquí, los tomará del AppTheme
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
-            icon: Icon(Icons.point_of_sale),
+            icon: Icon(Icons.point_of_sale_outlined),
+            activeIcon: Icon(Icons.point_of_sale),
             label: 'Ventas',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.inventory),
+            icon: Icon(Icons.inventory_2_outlined),
+            activeIcon: Icon(Icons.inventory),
             label: 'Productos',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart),
+            icon: Icon(Icons.bar_chart_outlined),
+            activeIcon: Icon(Icons.bar_chart),
             label: 'Reportes',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Perfil',
+          ),
         ],
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
