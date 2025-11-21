@@ -109,7 +109,7 @@ class _SplashScreenState extends State<SplashScreen>
                         color: Theme.of(context).colorScheme.secondary,
                         backgroundColor: Theme.of(
                           context,
-                        ).colorScheme.surface.withOpacity(0.3),
+                        ).colorScheme.surface.withAlpha((255 * 0.3).round()),
                       ),
                     );
                   },
