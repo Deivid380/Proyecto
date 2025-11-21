@@ -34,6 +34,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'Usuario registrado con éxito. ¡Inicia sesión!',
         isError: false,
       );
+      // ignore: use_build_context_synchronously
       Navigator.of(context).pop(); // Vuelve a la pantalla de login
     }
   }
