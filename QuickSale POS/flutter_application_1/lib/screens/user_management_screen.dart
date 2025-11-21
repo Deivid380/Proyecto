@@ -216,7 +216,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 onDismissed: (direction) async {
                   await dbHelper.deleteUser(user.id!);
                   if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  final messenger = ScaffoldMessenger.of(context);
+                  messenger.showSnackBar(
                     SnackBar(
                       content: Text('Usuario ${user.username} eliminado'),
                     ),
@@ -273,7 +274,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                               if (confirm == true) {
                                 await dbHelper.deleteUser(user.id!);
                                 if (!mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
+                                final messenger = ScaffoldMessenger.of(context);
+                                messenger.showSnackBar(
                                   SnackBar(
                                     content: Text('Usuario ${user.username} eliminado'),
                                   ),
