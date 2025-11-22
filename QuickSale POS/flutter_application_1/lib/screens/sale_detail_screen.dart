@@ -41,6 +41,12 @@ class _SaleDetailScreenState extends State<SaleDetailScreen> {
               pw.SizedBox(height: 10),
               pw.Text('Recibo N°: ${widget.sale.id}'),
               pw.Text('Fecha: ${saleDate.toLocal().toString().split(' ')[0]}'),
+              if (widget.sale.clientName != null && widget.sale.clientName!.isNotEmpty) // New: Client Name
+                pw.Text('Cliente: ${widget.sale.clientName}'),
+              if (widget.sale.clientPhone != null && widget.sale.clientPhone!.isNotEmpty) // New: Client Phone
+                pw.Text('Teléfono: ${widget.sale.clientPhone}'),
+              if (widget.sale.paymentMethod != null && widget.sale.paymentMethod!.isNotEmpty) // New: Payment Method
+                pw.Text('Método de Pago: ${widget.sale.paymentMethod}'),
               pw.Padding(padding: const pw.EdgeInsets.symmetric(vertical: 5), child: pw.Divider()),
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -52,7 +58,7 @@ class _SaleDetailScreenState extends State<SaleDetailScreen> {
               ),
               pw.Divider(),
               ...items.map((item) {
-                debugPrint('PDF Item: $item'); // Debug print - KEEP THIS
+
                 final String productName = item['productName']?.toString() ?? 'Producto Desconocido';
                 final int quantity = (item['quantity'] as int?) ?? 0;
                 final double price = (item['price'] as double?) ?? 0.0;
@@ -181,6 +187,10 @@ class _SaleDetailScreenState extends State<SaleDetailScreen> {
             const Divider(),
             const SizedBox(height: 8),
             Text('Fecha: ${widget.sale.date.toLocal().toString().split(' ')[0]}'),
+            if (widget.sale.clientName != null && widget.sale.clientName!.isNotEmpty)
+              Text('Cliente: ${widget.sale.clientName}'),
+            if (widget.sale.clientPhone != null && widget.sale.clientPhone!.isNotEmpty)
+              Text('Teléfono: ${widget.sale.clientPhone}'),
           ],
         ),
       ),
