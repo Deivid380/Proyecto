@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async'; // Required for Timer
 import 'package:intl/date_symbol_data_local.dart'; // Importa para la localización de fechas
 import 'package:intl/intl.dart'; // Importa para la configuración de locale
 import 'package:quicksale_pos/screens/splash_screen.dart';
