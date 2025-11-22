@@ -14,6 +14,7 @@ dependencies:
 
   # Core packages for QuickSale POS
   sqflite: ^2.4.2
+  sqflite_common_ffi: ^2.4.0
   path_provider: ^2.1.5
   path: ^1.9.0
   intl: ^0.19.0
@@ -27,6 +28,7 @@ dependencies:
   # Feature packages
   pdf: ^3.11.0
   printing: ^5.12.0
+  pdf_google_fonts: ^0.3.0 # Added for Google Fonts with PDF
   image_picker: ^1.1.2
   fl_chart: ^0.68.0
   google_mlkit_barcode_scanning: ^0.11.0

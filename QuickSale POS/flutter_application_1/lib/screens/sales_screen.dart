@@ -1,18 +1,22 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
+import 'dart:io'; // For File
 
+// Local project imports
+import 'package:quicksale_pos/models/product.dart';
 import 'package:quicksale_pos/models/user.dart';
+import 'package:quicksale_pos/helpers/database_helper.dart';
 import 'package:quicksale_pos/screens/scanner_screen.dart';
-import '../helpers/database_helper.dart';
-import '../helpers/currency_formatter.dart';
-import '../models/product.dart';
+import 'package:quicksale_pos/helpers/currency_formatter.dart';
 import 'package:quicksale_pos/theme/app_theme.dart';
 import 'package:quicksale_pos/widgets/empty_state.dart';
-import 'package:printing/printing.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
+
+// Package imports
 import 'package:intl/intl.dart';
-import 'package:equatable/equatable.dart'; // Ensure this import is present
+import 'package:equatable/equatable.dart'; // For Equatable
+import 'package:pdf/widgets.dart' as pw;
+import 'package:pdf/pdf.dart';
+import 'package:printing/printing.dart';
+import 'package:pdf_google_fonts/pdf_google_fonts.dart' as pdf_google_fonts; // Correct import for pdf_google_fonts
 
 // Modelo para representar un item en el carrito
 class CartItem extends Equatable {
@@ -46,6 +50,12 @@ class _SalesScreenState extends State<SalesScreen> {
   List<CartItem> _cart = [];
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+
+  // New controllers and variables for payment dialog
+  final TextEditingController _clientNameController = TextEditingController();
+  final TextEditingController _clientPhoneController = TextEditingController();
+  String? _selectedPaymentMethod;
+  // End new controllers and variables
 
 
   @override
@@ -126,12 +136,10 @@ class _SalesScreenState extends State<SalesScreen> {
 
   void _incrementQuantity(int productId) {
     setState(() {
-      debugPrint('Incrementing quantity for product ID: $productId');
       // Find the CartItem in _cart using productId
       final existingItemIndex = _cart.indexWhere((item) => item.product.id == productId);
 
       if (existingItemIndex == -1) {
-        debugPrint('Error: Attempted to increment quantity for a product not in cart: $productId');
         return;
       }
 
@@ -155,20 +163,15 @@ class _SalesScreenState extends State<SalesScreen> {
             backgroundColor: Colors.orange,
           ));
       }
-      debugPrint('Cart after incrementing: ${_cart.map((item) => '${item.product.name} x ${item.quantity}').join(', ')}');
-      debugPrint('Current Cart Length: ${_cart.length}');
-      debugPrint('Current Total: $_total');
     });
   }
 
   void _decrementQuantity(int productId) {
     setState(() {
-      debugPrint('Decrementing quantity for product ID: $productId');
       // Find the CartItem in _cart using productId
       final existingItemIndex = _cart.indexWhere((item) => item.product.id == productId);
 
       if (existingItemIndex == -1) {
-        debugPrint('Error: Attempted to decrement quantity for a product not in cart: $productId');
         return;
       }
 
@@ -184,19 +187,12 @@ class _SalesScreenState extends State<SalesScreen> {
       } else {
         _removeFromCart(existingItem);
       }
-      debugPrint('Cart after decrementing: ${_cart.map((item) => '${item.product.name} x ${item.quantity}').join(', ')}');
-      debugPrint('Current Cart Length: ${_cart.length}');
-      debugPrint('Current Total: $_total');
     });
   }
 
   void _removeFromCart(CartItem item) {
     setState(() {
-      debugPrint('Removing item from cart: ${item.product.name}');
       _cart = List<CartItem>.from(_cart)..remove(item); // Create new list and remove
-      debugPrint('Cart after removing: ${_cart.map((item) => '${item.product.name} x ${item.quantity}').join(', ')}');
-      debugPrint('Current Cart Length: ${_cart.length}');
-      debugPrint('Current Total: $_total');
     });
   }
 
@@ -225,20 +221,81 @@ class _SalesScreenState extends State<SalesScreen> {
   Future<void> _handlePayment() async {
     if (_cart.isEmpty) return;
 
+    // Reset controllers and selected method for a new transaction
+    _clientNameController.clear();
+    _clientPhoneController.clear();
+    _selectedPaymentMethod = null;
+
+    final _formKey = GlobalKey<FormState>();
+
     // --- Pre-payment confirmation screen/dialog ---
     final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Confirmar Compra'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Detalles de la compra:'),
-            ..._cart.map((item) => Text('${item.product.name} x ${item.quantity} - ${CurrencyFormatter.format(item.product.price * item.quantity)}')),
-            const Divider(),
-            Text('Total: ${CurrencyFormatter.format(_total)}', style: const TextStyle(fontWeight: FontWeight.bold)),
-          ],
+        content: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Form(
+              key: _formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Detalles de la compra:'),
+                    ..._cart.map((item) => Text('${item.product.name} x ${item.quantity} - ${CurrencyFormatter.format(item.product.price * item.quantity)}')),
+                    const Divider(),
+                    Text('Total: ${CurrencyFormatter.format(_total)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _clientNameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Nombre del Cliente (Opcional)',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextFormField(
+                      controller: _clientPhoneController,
+                      decoration: const InputDecoration(
+                        labelText: 'Teléfono del Cliente (Opcional)',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      keyboardType: TextInputType.phone,
+                    ),
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<String>(
+                      value: _selectedPaymentMethod,
+                      decoration: const InputDecoration(
+                        labelText: 'Método de Pago',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      items: ['Efectivo', 'Tarjeta', 'Transferencia', 'Crédito']
+                          .map((method) => DropdownMenuItem(
+                                value: method,
+                                child: Text(method),
+                              ))
+                          .toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedPaymentMethod = value;
+                        });
+                      },
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Selecciona un método de pago';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
         actions: [
           TextButton(
@@ -246,7 +303,11 @@ class _SalesScreenState extends State<SalesScreen> {
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () {
+              if (_formKey.currentState?.validate() ?? false) {
+                Navigator.of(context).pop(true);
+              }
+            },
             child: const Text('Confirmar Pago'),
           ),
         ],
@@ -254,19 +315,83 @@ class _SalesScreenState extends State<SalesScreen> {
     );
 
     if (confirmed == null || !confirmed) {
-      return; // User cancelled payment
+      return; // User cancelled payment or validation failed
     }
 
-    final saleId = await dbHelper.createSale(_cart, widget.user.id!);
+    // Processing animation/indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Procesando venta...'),
+          ],
+        ),
+      ),
+    );
+
+    // Simulate network/database operation
+    await Future.delayed(const Duration(seconds: 2));
+
+    if (!mounted) return;
+    Navigator.of(context).pop(); // Close processing dialog
+
+    final clientName = _clientNameController.text.isNotEmpty ? _clientNameController.text : null;
+    final clientPhone = _clientPhoneController.text.isNotEmpty ? _clientPhoneController.text : null;
+    final paymentMethod = _selectedPaymentMethod; // This will not be null due to validation
+
+    // --- DEBUG START ---
+    print('DEBUG: Cart content before createSale: $_cart');
+    // --- DEBUG END ---
+
+    final saleId = await dbHelper.createSale(
+        _cart,
+        widget.user.id!,
+        clientName: clientName,
+        clientPhone: clientPhone,
+        paymentMethod: paymentMethod,
+    );
     
-    _generateAndPrintReceipt(saleId, _cart, _total);
+    if (!mounted) return;
+    _generateAndPrintReceipt(saleId, _cart, _total, clientName, clientPhone, paymentMethod!);
 
     setState(() {
       _cart.clear();
+      _clientNameController.clear();
+      _clientPhoneController.clear();
+      _selectedPaymentMethod = null;
     });
     _loadProducts(); // Recargar productos para reflejar el nuevo stock
 
-    _showSuccessDialog();
+    // Show success checkmark animation
+    _showSuccessAnimation();
+  }
+
+  void _showSuccessAnimation() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.check_circle_outline, color: Colors.green, size: 80),
+            SizedBox(height: 16),
+            Text('¡Factura Generada!', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          ],
+        ),
+      ),
+    );
+
+    Future.delayed(const Duration(seconds: 2), () {
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Close success animation
+      _showSuccessDialog(); // Show the original success dialog
+    });
   }
 
   void _showSuccessDialog() {
@@ -285,9 +410,11 @@ class _SalesScreenState extends State<SalesScreen> {
     );
   }
 
-  Future<void> _generateAndPrintReceipt(int saleId, List<CartItem> cart, double total) async {
+  Future<void> _generateAndPrintReceipt(int saleId, List<CartItem> cart, double total, String? clientName, String? clientPhone, String paymentMethod) async {
     final doc = pw.Document();
     final dateFormat = DateFormat('dd/MM/yyyy HH:mm');
+    final font = await pdf_google_fonts.PdfGoogleFonts.openSansRegular();
+    final boldFont = await pdf_google_fonts.PdfGoogleFonts.openSansBold();
 
     doc.addPage(
       pw.Page(
@@ -296,30 +423,34 @@ class _SalesScreenState extends State<SalesScreen> {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              pw.Center(child: pw.Text('QuickSale POS', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14))),
+              pw.Center(child: pw.Text('QuickSale POS', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14, font: boldFont))),
               pw.SizedBox(height: 10),
-              pw.Text('Recibo N°: $saleId'),
-              pw.Text('Fecha: ${dateFormat.format(DateTime.now())}'),
-              pw.Text('Atendido por: ${widget.user.username}'),
+              pw.Text('Recibo N°: $saleId', style: pw.TextStyle(font: font)),
+              pw.Text('Fecha: ${dateFormat.format(DateTime.now())}', style: pw.TextStyle(font: font)),
+              pw.Text('Atendido por: ${widget.user.username}', style: pw.TextStyle(font: font)),
+              if (clientName != null && clientName.isNotEmpty) // New: Client Name
+                pw.Text('Cliente: $clientName', style: pw.TextStyle(font: font)),
+              if (clientPhone != null && clientPhone.isNotEmpty) // New: Client Phone
+                pw.Text('Teléfono: $clientPhone', style: pw.TextStyle(font: font)),
               pw.Padding(
                 padding: const pw.EdgeInsets.symmetric(vertical: 10),
                 child: pw.Divider(),
               ),
-              pw.TableHelper.fromTextArray(
-                headers: ['Producto', 'Cant.', 'Total'],
-                data: cart.map((item) => [
-                  item.product.name,
-                  item.quantity.toString(),
-                  CurrencyFormatter.format(item.product.price * item.quantity),
-                ]).toList(),
-                cellAlignment: pw.Alignment.centerRight,
-                headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-                cellStyle: const pw.TextStyle(fontSize: 10),
-                columnWidths: {
-                  0: const pw.FlexColumnWidth(3), // Producto
-                  1: const pw.FlexColumnWidth(1), // Cant.
-                  2: const pw.FlexColumnWidth(1.5), // Total
-                },
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Expanded(flex: 3, child: pw.Text('Producto', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, font: boldFont))),
+                      pw.Expanded(flex: 1, child: pw.Text('Cant.', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, font: boldFont), textAlign: pw.TextAlign.center)),
+                      pw.Expanded(flex: 1, child: pw.Text('Total', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, font: boldFont), textAlign: pw.TextAlign.right)),
+                    ],
+                  ),
+                  pw.Divider(),
+                  // Construir la lista de ítems de venta por separado
+                  ..._buildPdfSaleItems(cart, font, boldFont),
+                ],
               ),
               pw.Padding(
                 padding: const pw.EdgeInsets.symmetric(vertical: 10),
@@ -335,6 +466,13 @@ class _SalesScreenState extends State<SalesScreen> {
                   ),
                 ]
               ),
+              pw.SizedBox(height: 5), // Added spacing
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.end,
+                children: [
+                  pw.Text('Método de Pago: $paymentMethod', style: pw.TextStyle(fontSize: 12)), // New: Payment Method
+                ]
+              ),
               pw.SizedBox(height: 20),
               pw.Center(child: pw.Text('¡Gracias por su compra!')),
             ]
@@ -343,6 +481,30 @@ class _SalesScreenState extends State<SalesScreen> {
       ),
     );
     await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => doc.save());
+  }
+
+  List<pw.Widget> _buildPdfSaleItems(List<CartItem> cart, pw.Font font, pw.Font boldFont) {
+    return cart.map((item) {
+      final String productName = item.product.name.isNotEmpty ? item.product.name : 'Producto Desconocido';
+      final int quantity = item.quantity;
+      final double price = item.product.price;
+      final double itemTotal = price * quantity;
+      return pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(productName, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, font: boldFont)),
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text('Cant: $quantity', style: pw.TextStyle(fontSize: 9, font: font)),
+              pw.Text('Precio unit.: ${CurrencyFormatter.format(price)}', style: pw.TextStyle(fontSize: 9, font: font)),
+              pw.Text('Total: ${CurrencyFormatter.format(itemTotal)}', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, font: boldFont)),
+            ],
+          ),
+          pw.SizedBox(height: 5), // Espacio entre ítems
+        ],
+      );
+    }).toList();
   }
 
   double get _total => _cart.fold(0.0, (sum, item) => sum + (item.product.price * item.quantity));
@@ -589,7 +751,6 @@ class _CartView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('BUILDING _CartView. Cart length: ${cart.length}');
     return Container(
       margin: const EdgeInsets.all(8.0),
       decoration: BoxDecoration(
@@ -612,7 +773,6 @@ class _CartView extends StatelessWidget {
                     itemCount: cart.length,
                     itemBuilder: (context, index) {
                       final item = cart[index];
-                      debugPrint('  Building ListTile for ${item.product.name} x ${item.quantity}');
                       final availableStockInProduct = item.product.stock - item.quantity; // Stock available for this product outside the cart
                       return ListTile(
                         key: ObjectKey(item),
