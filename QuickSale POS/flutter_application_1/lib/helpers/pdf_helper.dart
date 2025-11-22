@@ -50,21 +50,21 @@ class PdfHelper {
               ),
               pw.Divider(),
               // Table Body
-              ...saleDetails.map((item) {
-                final double totalItem = item['price'] * item['quantity'];
-                return pw.Row(
+              for (final item in saleDetails)
+                pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Expanded(flex: 3, child: pw.Text(item['productName'])),
+                    pw.Expanded(flex: 3, child: pw.Text(item['name'])),
                     pw.Expanded(
                         flex: 1, child: pw.Text(item['quantity'].toString())),
                     pw.Expanded(
                         flex: 2,
-                        child: pw.Text(CurrencyFormatter.format(totalItem),
+                        child: pw.Text(
+                            CurrencyFormatter.format(
+                                item['price'] * item['quantity']),
                             textAlign: pw.TextAlign.right)),
                   ],
-                );
-              }).toList(),
+                ),
               pw.Divider(),
               pw.SizedBox(height: 20),
               // Total

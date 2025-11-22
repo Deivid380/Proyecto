@@ -74,8 +74,10 @@ class _ClientesScreenState extends State<ClientesScreen> {
                   } else {
                     await dbHelper.updateCliente(newCliente);
                   }
-                  _refreshClientes();
+
+                  if (!mounted) return; // Add this line here
                   Navigator.of(context).pop();
+                  _refreshClientes();
                 }
               },
               child: const Text('Guardar'),

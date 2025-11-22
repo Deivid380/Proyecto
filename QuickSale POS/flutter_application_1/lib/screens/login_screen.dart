@@ -29,7 +29,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (user != null) {
         if (user.status == 'blocked') {
-          // ignore: use_build_context_synchronously
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text(
@@ -41,12 +41,12 @@ class _LoginScreenState extends State<LoginScreen> {
           return;
         }
 
-        // ignore: use_build_context_synchronously
+        if (!mounted) return;
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => HomeScreen(user: user)),
         );
       } else {
-        // ignore: use_build_context_synchronously
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Usuario o contraseña incorrectos.'),

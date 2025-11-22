@@ -1,5 +1,8 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'dart:io'; // Import for Platform checks
+import 'package:sqflite_common_ffi/sqflite_ffi.dart'; // New import
+
 import '../models/product.dart';
 import '../models/sale.dart';
 import 'package:quicksale_pos/models/user.dart';
@@ -13,7 +16,13 @@ class DatabaseHelper {
     return _instance;
   }
 
-  DatabaseHelper._internal();
+  DatabaseHelper._internal() {
+    // Initialize FFI for desktop platforms only
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      sqfliteFfiInit();
+      databaseFactory = databaseFactoryFfi;
+    }
+  }
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -25,7 +34,7 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'quicksale_pos.db');
     return await openDatabase(
       path,
-      version: 7, // Versión incrementada a 5
+      version: 8, // Incrementado a 8
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -48,7 +57,10 @@ class DatabaseHelper {
         date TEXT,
         totalAmount REAL,
         userId INTEGER,
-        clienteId INTEGER
+        clienteId INTEGER,
+        clientName TEXT, // New column
+        clientPhone TEXT, // New column
+        paymentMethod TEXT
       )
     ''');
     await db.execute('''
@@ -112,10 +124,26 @@ class DatabaseHelper {
       await db.execute('ALTER TABLE sales ADD COLUMN userId INTEGER');
     }
     if (oldVersion < 6) {
-      await db.execute('ALTER TABLE sales ADD COLUMN clienteId INTEGER');
+      // Check if the column already exists before adding it
+      List<Map> columns = await db.rawQuery("PRAGMA table_info(sales)");
+      bool clienteIdExists = columns.any((column) => column['name'] == 'clienteId');
+      if (!clienteIdExists) {
+        await db.execute('ALTER TABLE sales ADD COLUMN clienteId INTEGER');
+      }
     }
     if (oldVersion < 7) {
       await db.execute("ALTER TABLE sales ADD COLUMN paymentMethod TEXT");
+    }
+    if (oldVersion < 8) { // New migration for clientName and clientPhone
+      List<Map> columns = await db.rawQuery("PRAGMA table_info(sales)");
+      bool clientNameExists = columns.any((column) => column['name'] == 'clientName');
+      if (!clientNameExists) {
+        await db.execute("ALTER TABLE sales ADD COLUMN clientName TEXT");
+      }
+      bool clientPhoneExists = columns.any((column) => column['name'] == 'clientPhone');
+      if (!clientPhoneExists) {
+        await db.execute("ALTER TABLE sales ADD COLUMN clientPhone TEXT");
+      }
     }
   }
 
@@ -254,7 +282,14 @@ class DatabaseHelper {
   }
 
   // --- Métodos para Ventas ---
-  Future<int> createSale(List<dynamic> cart, int userId, {int? clienteId}) async {
+  Future<int> createSale(
+    List<dynamic> cart,
+    int userId, {
+    int? clienteId,
+    String? clientName,
+    String? clientPhone,
+    String? paymentMethod,
+  }) async {
     Database db = await database;
     int saleId = 0;
     await db.transaction((txn) async {
@@ -264,6 +299,9 @@ class DatabaseHelper {
         'totalAmount': totalAmount,
         'userId': userId,
         'clienteId': clienteId,
+        'clientName': clientName,
+        'clientPhone': clientPhone,
+        'paymentMethod': paymentMethod,
       });
 
       for (var item in cart) {
@@ -271,7 +309,7 @@ class DatabaseHelper {
           'saleId': saleId,
           'productId': item.product.id,
           'productName': item.product.name,
-          'quantity': item.quantity, // Usar la cantidad del CartItem
+          'quantity': item.quantity,
           'price': item.product.price,
         });
         // Actualizar stock del producto

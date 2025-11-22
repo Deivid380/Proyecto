@@ -17,12 +17,13 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   late final List<Widget> _widgetOptions; // Se inicializará en initState
+  // This list holds the widgets for the bottom navigation bar.
 
   @override
   void initState() {
     super.initState();
     _widgetOptions = <Widget>[
-      const SalesScreen(user: widget.user), // Pasamos el usuario a SalesScreen
+      SalesScreen(user: widget.user), // Pasamos el usuario a SalesScreen
       const ProductsScreen(),
       ReportsScreen(user: widget.user), // Pasamos el usuario a ReportsScreen
       ProfileScreen(user: widget.user), // Pasamos el usuario a ProfileScreen
