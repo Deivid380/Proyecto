@@ -226,7 +226,7 @@ class _SalesScreenState extends State<SalesScreen> {
     _clientPhoneController.clear();
     _selectedPaymentMethod = null;
 
-    final _formKey = GlobalKey<FormState>();
+    final formKey = GlobalKey<FormState>();
 
     // --- Pre-payment confirmation screen/dialog ---
     final bool? confirmed = await showDialog<bool>(
@@ -236,7 +236,7 @@ class _SalesScreenState extends State<SalesScreen> {
         content: StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return Form(
-              key: _formKey,
+              key: formKey,
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -267,7 +267,7 @@ class _SalesScreenState extends State<SalesScreen> {
                     ),
                     const SizedBox(height: 10),
                     DropdownButtonFormField<String>(
-                      value: _selectedPaymentMethod,
+                      initialValue: _selectedPaymentMethod,
                       decoration: const InputDecoration(
                         labelText: 'Método de Pago',
                         border: OutlineInputBorder(),
@@ -303,9 +303,8 @@ class _SalesScreenState extends State<SalesScreen> {
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
-            onPressed: () {
-              if (_formKey.currentState?.validate() ?? false) {
-                Navigator.of(context).pop(true);
+                          onPressed: () {
+                            if (formKey.currentState?.validate() ?? false) {                Navigator.of(context).pop(true);
               }
             },
             child: const Text('Confirmar Pago'),
@@ -345,7 +344,7 @@ class _SalesScreenState extends State<SalesScreen> {
     final paymentMethod = _selectedPaymentMethod; // This will not be null due to validation
 
     // --- DEBUG START ---
-    print('DEBUG: Cart content before createSale: $_cart');
+
     // --- DEBUG END ---
 
     final saleId = await dbHelper.createSale(
