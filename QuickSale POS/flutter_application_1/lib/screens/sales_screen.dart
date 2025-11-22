@@ -371,6 +371,7 @@ class _SalesScreenState extends State<SalesScreen> {
   }
 
   void _showSuccessAnimation() {
+    if (!mounted) return; // Guard against BuildContext usage after async gap
     showDialog(
       context: context,
       barrierDismissible: false,
