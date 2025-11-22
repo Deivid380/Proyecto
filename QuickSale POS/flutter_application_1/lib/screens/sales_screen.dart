@@ -16,7 +16,7 @@ import 'package:equatable/equatable.dart'; // For Equatable
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
-import 'package:google_fonts/google_fonts.dart' as g_fonts; // Restored original google_fonts
+
 
 // Modelo para representar un item en el carrito
 class CartItem extends Equatable {
@@ -413,8 +413,8 @@ class _SalesScreenState extends State<SalesScreen> {
   Future<void> _generateAndPrintReceipt(int saleId, List<CartItem> cart, double total, String? clientName, String? clientPhone, String paymentMethod) async {
     final doc = pw.Document();
     final dateFormat = DateFormat('dd/MM/yyyy HH:mm');
-    final font = pw.Font.Helvetica;
-    final boldFont = pw.Font.HelveticaBold;
+    final font = pw.Font.helvetica();
+    final boldFont = pw.Font.helveticaBold();
 
     doc.addPage(
       pw.Page(
