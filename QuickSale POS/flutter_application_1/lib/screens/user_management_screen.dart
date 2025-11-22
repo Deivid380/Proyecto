@@ -89,7 +89,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       obscureText: true,
                     ),
                     DropdownButtonFormField<String>(
-                      key: ValueKey(selectedRole),
                       initialValue: selectedRole,
                       decoration: const InputDecoration(labelText: 'Rol'),
                       items:
@@ -150,7 +149,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   final updatedUser = user.copyWith(
                     role: selectedRole,
                     status: isBlocked ? 'blocked' : 'active',
-                    // Si se ingresó una nueva contraseña, se actualiza. Si no, se mantiene la anterior.
                     password: password.isNotEmpty ? password : user.password,
                   );
                   await dbHelper.updateUser(updatedUser);
@@ -162,10 +160,10 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   );
                   await dbHelper.insertUser(newUser);
                 }
+
+                if (!mounted) return; // This is line 164
+                Navigator.of(this.context).pop();
                 _refreshUsers();
-                if (!mounted) return;
-                // ignore: use_build_context_synchronously
-                Navigator.of(context).pop();
               },
               child: const Text('Guardar'),
             ),
@@ -218,9 +216,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 onDismissed: (direction) async {
                   await dbHelper.deleteUser(user.id!);
                   if (!mounted) return;
-                  final messenger = ScaffoldMessenger.of(context);
-                  // ignore: use_build_context_synchronously
-                  messenger.showSnackBar(
+                  ScaffoldMessenger.of(this.context).showSnackBar(
                     SnackBar(
                       content: Text('Usuario ${user.username} eliminado'),
                     ),
@@ -254,7 +250,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                           IconButton(
                             icon: const Icon(Icons.delete, color: Colors.red),
                             onPressed: () async {
-                              final confirm = await showDialog(
+                              final confirm = await showDialog<bool>(
                                 context: context,
                                 builder: (context) => AlertDialog(
                                   title: const Text('Confirmar Eliminación'),
@@ -277,11 +273,10 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                               if (confirm == true) {
                                 await dbHelper.deleteUser(user.id!);
                                 if (!mounted) return;
-                                final messenger = ScaffoldMessenger.of(context);
-                                // ignore: use_build_context_synchronously
-                                messenger.showSnackBar(
+                                ScaffoldMessenger.of(this.context).showSnackBar(
                                   SnackBar(
-                                    content: Text('Usuario ${user.username} eliminado'),
+                                    content: Text(
+                                        'Usuario ${user.username} eliminado'),
                                   ),
                                 );
                                 _refreshUsers();
