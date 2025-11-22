@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
+
 import 'package:quicksale_pos/models/user.dart';
 import 'package:quicksale_pos/screens/scanner_screen.dart';
 import '../helpers/database_helper.dart';
@@ -578,7 +578,6 @@ class _CartView extends StatelessWidget {
   final double total;
 
   const _CartView({
-    super.key,
     required this.cart,
     required this.onIncrement,
     required this.onDecrement,
