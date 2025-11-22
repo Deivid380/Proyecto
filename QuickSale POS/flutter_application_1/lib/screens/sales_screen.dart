@@ -337,7 +337,7 @@ class _SalesScreenState extends State<SalesScreen> {
     await Future.delayed(const Duration(seconds: 2));
 
     if (!mounted) return;
-    Navigator.of(context).pop(); // Close processing dialog
+    Navigator.of(this.context).pop(); // Close processing dialog
 
     final clientName = _clientNameController.text.isNotEmpty ? _clientNameController.text : null;
     final clientPhone = _clientPhoneController.text.isNotEmpty ? _clientPhoneController.text : null;
