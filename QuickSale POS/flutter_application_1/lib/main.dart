@@ -17,8 +17,54 @@ void main() async {
   runApp(const QuickSaleApp());
 }
 
-class QuickSaleApp extends StatelessWidget {
+class QuickSaleApp extends StatefulWidget {
   const QuickSaleApp({super.key});
+
+  @override
+  State<QuickSaleApp> createState() => _QuickSaleAppState();
+}
+
+class _QuickSaleAppState extends State<QuickSaleApp> with WidgetsBindingObserver {
+  Timer? _timer;
+  DateTime? _backgroundTime;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _backgroundTime = DateTime.now();
+      _timer = Timer(const Duration(minutes: 4), _resetApp);
+    } else if (state == AppLifecycleState.resumed) {
+      _timer?.cancel();
+      if (_backgroundTime != null && DateTime.now().difference(_backgroundTime!).inMinutes >= 4) {
+        _resetApp();
+      }
+      _backgroundTime = null; // Clear background time after resuming
+    }
+  }
+
+  void _resetApp() {
+    _timer?.cancel();
+    _backgroundTime = null;
+    if (mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const SplashScreen()), // Navigate to your desired reset screen
+        (Route<dynamic> route) => false,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
